@@ -1,0 +1,86 @@
+﻿@using System.Web.Script.Serialization;
+@using TPRM.Models;
+@using TPRM.Contexts;
+@{ 
+    UsuarioCtx ctx = new UsuarioCtx();
+    JavaScriptSerializer json_serializer = new JavaScriptSerializer();
+    var view = ((RazorView)ViewContext.View).ViewPath.ToString().Replace("~", "");
+    var objToken = HttpContext.Current.Request.Cookies["token"] != null ?
+                          json_serializer.Deserialize<Usuario>(ctx.DecryptText(HttpContext.Current.Request.Cookies["token"].Value)) :
+                          null;
+    bool admin = objToken != null && objToken.empresa == null;
+    string menuAdm = "<li class=\"dropdown\">";
+    menuAdm += "<a class=\"dropdown-toggle\" data-toggle=\"dropdown\">Cadastros<span class=\"caret\">";
+    menuAdm += "</span><span style = \"font-size:16px;\" class=\"pull-right hidden-xs showopacity glyphicon glyphicon-cog\"></span ></a>";
+    menuAdm += "<ul class=\"dropdown-menu forAnimate\" role=\"menu\">";
+    menuAdm += "<li><a href = "+Url.Action("Index","Usuario")+ " > Usuário </a></li><li><a href=" + Url.Action("Perfil", "Usuario") + ">Perfil</a></li><li><a href = " + Url.Action("Index", "Empresa") + "> Empresa </a></li>";
+    menuAdm += "<li><a href = " + Url.Action("Index", "Servico") + "> Serviço </a></li></ul></li> ";
+    string faturamento = "<li><a href = "+Url.Action("Faturamento","Transacao")+"> Faturamento";
+    faturamento += "<span style = \"font-size:16px;\" class=\"pull-right hidden-xs showopacity glyphicon glyphicon-usd\"></span></a></li>";
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title</title>
+    @Styles.Render("~/Content/css")
+    @Scripts.Render("~/bundles/modernizr")
+    <!-- CSS -->
+    <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Roboto:400,100,300,500">
+    <link rel="stylesheet" href="@Url.Content("~/assets/bootstrap/css/bootstrap.min.css")">
+    <link rel="stylesheet" href="@Url.Content("~/assets/font-awesome/css/font-awesome.min.css")">
+    <link rel="stylesheet" href="@Url.Content("~/assets/css/form-elements.css")">
+    <link rel="stylesheet" href="@Url.Content("~/assets/css/style.css")">
+    <link rel="stylesheet" type="text/css" href="@Url.Content("~/Scripts/jqueryeasyui/themes/default/easyui.css")">
+    <link rel="stylesheet" type="text/css" href="@Url.Content("~/Scripts/jqueryeasyui/themes/icon.css")">
+    <link rel="stylesheet" type="text/css" href="@Url.Content("~/Scripts/jqueryeasyui/demo.css")">
+    <script src="@Url.Content("~/assets/js/jquery-1.11.1.min.js")"></script>
+    <!-- Javascript -->
+    <script src="@Url.Content("~/assets/bootstrap/js/bootstrap.min.js")"></script>
+    <script src="@Url.Content("~/assets/js/jquery.backstretch.min.js")"></script>
+    <script src="@Url.Content("~/assets/js/scripts.js")"></script>
+    
+    <script type="text/javascript" src="@Url.Content("~/Scripts/jqueryeasyui/jquery.min.js")"></script>
+    <script type="text/javascript" src="@Url.Content("~/Scripts/jqueryeasyui/jquery.easyui.min.js")"></script>
+</head>
+<body style="background-color:#333">
+  
+    <div class="container body-content">
+        <hr style="position:absolute;background-color:#333;color:white"><center><h2 style="font-weight:bold">TPRM</h2></center><hr />
+        <nav class="navbar navbar-inverse sidebar" role="navigation">
+            <div class="container-fluid">
+                <!-- Brand and toggle get grouped for better mobile display -->
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-sidebar-navbar-collapse-1">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    
+                </div>
+                <!-- Collect the nav links, forms, and other content for toggling -->
+                <div class="collapse navbar-collapse" id="bs-sidebar-navbar-collapse-1">
+                    <ul class="nav navbar-nav">
+                        <li class="active"><a href="@Url.Action("Index","Home")">Home<span style="font-size:16px;" class="pull-right hidden-xs showopacity glyphicon glyphicon-home"></span></a></li>
+                        <li><a href="@Url.Action("Index","Transacao")">Transações<span style="font-size:16px;" class="pull-right hidden-xs showopacity glyphicon glyphicon-list-alt"></span></a></li>
+                       @Html.Raw(admin ? faturamento : "")
+                        @Html.Raw(admin ? menuAdm : "")
+                        <li class="active"><a href="@Url.Action("logout","Login")">Sair<span style="font-size:16px;" class="pull-right hidden-xs showopacity glyphicon glyphicon-remove-sign"></span></a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        
+        @RenderBody()
+
+        
+    </div>
+   
+    
+    @RenderSection("scripts", required: false)
+    
+</body>
+
+</html>

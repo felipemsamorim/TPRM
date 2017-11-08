@@ -1,0 +1,234 @@
+﻿@using System.Web.Script.Serialization;
+@using TPRM.Models;
+@using TPRM.Contexts;
+@{
+    UsuarioCtx ctx = new UsuarioCtx();
+    JavaScriptSerializer json_serializer = new JavaScriptSerializer();
+    var objToken = HttpContext.Current.Request.Cookies["token"] != null ?
+                          json_serializer.Deserialize<Usuario>(ctx.DecryptText(HttpContext.Current.Request.Cookies["token"].Value)) :
+                          null;
+    bool analista = objToken != null && objToken.perfil != null && objToken.perfil.analista == "s";
+    bool isUser = objToken != null && objToken.empresa != null;
+    string display = !isUser ? "none" : "block";
+    string displayTb = !analista ? "none" : "block";
+}
+<body>
+    <div style="display:@display">
+        <div class="row" style="padding-bottom:1%">
+            <div class="col-md-12">
+
+                <label for="desc">Descrição:</label>
+                <input type="text" name="desc" placeholder="descrição..." id="desc" style="width:90%;max-width:100%">
+            </div>
+        </div>
+
+        <div id="r2"class="row" style="padding-bottom:1%">
+            <div class="col-md-7">
+                <label for="serv">Serviço:</label>
+                <input class="easyui-combobox" id="serv" name="serv" style="width:80%"
+                       data-options="valueField: 'id',
+                     url: '@Url.Action("getAll","Servico")',
+                     textField: 'descricao'">
+            </div>
+            <div class="col-md-5">
+                <label for="preco">Preço:</label>
+                <input type="text" id="preco" name="preco" class="easyui-numberbox" value=""
+                       data-options="min:0,precision:2, prefix:'R$ ',
+                   groupSeparator:'.',
+                   decimaSeparator:','">
+            </div>
+        </div>
+
+        <div id="r3"class="row" style="padding-bottom:1%">
+            <div class="col-md-12">
+                <input class="easyui-combobox" id="emp" name="emp" style="width:97%"
+                       data-options="valueField: 'id',
+                     url: '@Url.Action("getAll","Empresa")',
+                     textField: 'nomefantasia',
+                     label: 'Empresa:',
+                     labelPosition: 'Top'">
+            </div>
+        </div>
+
+        <div class="row" style="padding-bottom:5%">
+            <div class="col-md-12">
+                <button type="button" id="save" iconCls="icon-ok" class="easyui-linkbutton" style="position:relative;right:-41%;width:15%;height:40px">Salvar</button>
+            </div>
+        </div>
+    </div>
+    <table id="dg" class="easyui-datagrid" title="Transações" style="width:100%;height:400px"
+           data-options="fitColumns:true,rownumbers:true,singleSelect:false,toolbar:'#tb',pagination:true">
+        <thead>
+            <tr>
+                <th data-options="field:'id'">ID</th>
+                <th data-options="field:'descricao'">Descrição</th>
+                <th data-options="field:'servico_desc'">Serviço</th>
+                <th data-options="field:'preco_f'">Preço</th>
+                <th data-options="field:'empresa_contratada_nome'">Empresa contratada</th>
+                <th data-options="field:'empresa_contratante_nome'">Empresa contratante</th>
+                <th data-options="field:'status_desc'">Status</th>
+                <th data-options="field:'CreatedBy'">Criado por</th>
+                <th data-options="field:'CreatedDate_f'">Criado em</th>
+                <th data-options="field:'UpdatedBy'">Atualizado por</th>
+                <th data-options="field:'UpdatedDate_f'">Atualizado em</th>
+            </tr>
+        </thead>
+    </table>
+        <div id="tb" style="padding:2px 5px;">
+            <a id="aprovar" class="easyui-linkbutton" iconCls="icon-ok">Aprovar</a>
+            <a id="reprovar" class="easyui-linkbutton" iconCls="icon-cancel">Reprovar</a>
+            <a id="pendencia" class="easyui-linkbutton" iconCls="icon-more">Pendência</a>
+        </div>
+    <!-- Modal -->
+    <div class="modal fade" id="dg" role="dialog">
+        <div class="modal-dialog">
+
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Erro</h4>
+                </div>
+                <div class="modal-body" id="dg_body">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Ok</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modal -->
+</body>
+<script>
+    $('input').on('keypress', function (e) {
+        if (e.key == 'Enter' && isUser)
+            $('#save').trigger('click');
+    });
+    $('#aprovar').on('click', function () {
+        var selecteds = dg.datagrid('getSelections');
+        for (var i = 0; i < selecteds.length; i++) {
+            $.ajax({
+                url: "@Url.Action("Aprovar","Transacao")",
+                data: { id: selecteds[i].id },
+                type: "POST",
+                success: function (r) {
+                    load()
+                },
+                error: function (e) {
+                    $('#dg_body').html(e.responseText);
+                    $("#dg").modal({ backdrop: true });
+                }
+            })
+        }
+    })
+    $('#reprovar').on('click', function () {
+        var selecteds = dg.datagrid('getSelections');
+        for (var i = 0; i < selecteds.length; i++) {
+            $.ajax({
+                url: "@Url.Action("Reprovar","Transacao")",
+                data: { id: selecteds[i].id },
+                type: "POST",
+                success: function (r) {
+                    load()
+                },
+                error: function (e) {
+                    $('#dg_body').html(e.responseText);
+                    $("#dg").modal({ backdrop: true });
+                }
+            })
+        }
+    })
+
+    $('#pendencia').on('click', function () {
+        var selecteds = dg.datagrid('getSelections');
+        for (var i = 0; i < selecteds.length; i++) {
+            $.ajax({
+                url: "@Url.Action("Pendente","Transacao")",
+                data: { id: selecteds[i].id },
+                type: "POST",
+                success: function (r) {
+                    load()
+                },
+                error: function (e) {
+                    $('#dg_body').html(e.responseText);
+                    $("#dg").modal({ backdrop: true });
+                }
+            })
+        }
+    })
+    $('#save').on('click', function (e) {
+        $('input').removeClass('error');
+        $('label[id*="error"]').remove();
+                
+        if ($('#desc').val() == "") {
+            var $label = $('<label  for="desc" class="error" style="position: relative;left: -35%;" id="desc-error">');
+            $label.insertAfter($('#desc'));
+            $label.text('Campo obrigatório');
+        }
+
+        if ($('#serv').val() == "") {
+            var $label = $('<label  for="serv" class="error" style="position: relative;left: -35%;" id="serv-error">');
+            $label.insertAfter($('#r2'));
+            $label.text('Campo obrigatório');
+        }
+
+        if ($('#emp').val() == "") {
+            var $label = $('<label  for="emp" class="error" style="position: relative;left: -35%;" id="emp-error">');
+            $label.insertAfter($('#r3'));
+            $label.text('Campo obrigatório');
+        }
+
+        if ($('#desc').val() == "" ||
+            $('#serv').val() == "" ||
+            $('#emp').val() == "")
+            return;
+
+        var t = {
+            descricao: $('#desc').val(),
+            preco: parseFloat($('#preco').val().replace('R$','').trim()),
+            servico:{id: $('#serv').val()},
+            empresa_contratada:{id:$('#emp').val()},
+            status:'p',
+
+        }
+
+        $.ajax({
+            url: "@Url.Action("Salvar","Transacao")",
+            data: JSON.stringify(t),
+            contentType: "application/json",
+            type: "POST",
+            success: function (r) {
+                load()
+                $('#desc').val("");
+                $('#serv').combobox('setValue', '')
+                $('#emp').combobox('setValue', '')
+                $('#preco').numberbox('setValue', '')
+            },
+            error: function (e) {
+                $('#dg_body').html(e.responseText);
+                $("#dg").modal({ backdrop: true });
+            }
+        })
+    });
+    var dg = $('#dg').datagrid();
+    var load = function () {
+        $.ajax({
+            url: "@Url.Action("getTransacoes", "Transacao")",
+            type: "GET",
+        success: function (r) {
+            dg.datagrid({
+                data: r
+            });
+        },
+        error: function (e) {
+            $('#dg_body').html(e.responseText);
+            $("#dg").modal({ backdrop: true });
+        }
+        });
+    }
+    load()
+    if("@displayTb" == 'none')
+    $('#tb').remove()
+</script>

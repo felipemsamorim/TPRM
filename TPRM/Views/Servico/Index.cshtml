@@ -1,0 +1,147 @@
+﻿
+<body>
+    <div>
+        <div class="row" style="padding-bottom:1%">
+            <div class="col-md-4">
+                <input type="hidden" id="id" />
+                <label for="desc">Descrição:</label>
+                <input type="text" name="desc" id="desc">
+            </div>
+            
+        </div>
+        <div class="row" style="padding-bottom:5%">
+            <div class="col-md-12">
+                <button type="button" id="save" iconCls="icon-ok" class="easyui-linkbutton" style="position:relative;right:-41%;width:15%;height:40px">Salvar</button>
+            </div>
+        </div>
+    </div>
+    <table id="dg" class="easyui-datagrid" title="Serviços" style="width:100%;height:400px"
+           data-options="fitColumns:true,rownumbers:true,singleSelect:true,toolbar:'#tb',pagination:true">
+        <thead>
+            <tr>
+                <th data-options="field:'id'">ID</th>
+                <th data-options="field:'descricao'">Descrição</th>
+            </tr>
+        </thead>
+    </table>
+    <div id="tb" style="padding:2px 5px;">
+        <a id="editar" class="easyui-linkbutton" iconCls="icon-edit">Editar</a>
+        <a id="remover" class="easyui-linkbutton" iconCls="icon-cancel">Remover</a>
+    </div>
+    <!-- Modal -->
+    <div class="modal fade" id="dg" role="dialog">
+        <div class="modal-dialog">
+
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Erro</h4>
+                </div>
+                <div class="modal-body" id="dg_body">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Ok</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modal --></body>
+<script>
+    $('input').on('keypress', function (e) {
+        if (e.key == 'Enter')
+            $('#save').trigger('click');
+    });
+    $('#save').on('click', function (e) {
+        $('input').removeClass('error');
+        $('label[id*="error"]').remove();
+
+        if ($('#desc').val() == "") {
+            var $label = $('<label  for="desc" class="error" style="position: relative;left: -38%;" id="desc-error">');
+            $label.insertAfter($('#desc'));
+            $label.text('Campo obrigatório');
+        }
+
+        if ($('#desc').val() == "")
+            return;
+
+        var s = {
+            id: $('#id').val() == '' ? 0 : $('#id').val(),
+            descricao: $('#desc').val()
+        }
+
+        if (s.id == 0) {
+            $.ajax({
+                url: "@Url.Action("createServico","Servico")",
+                data: JSON.stringify(s),
+                contentType: "application/json",
+                type: "POST",
+                success: function (r) {
+                    load()
+                    $('#id').val("");
+                    $('#desc').val("");
+                },
+                error: function (e) {
+                    $('#dg_body').html(e.responseText);
+                    $("#dg").modal({ backdrop: true });
+                }
+            })
+        } else {
+            $.ajax({
+                url: "@Url.Action("updateServico","Servico")",
+                data: JSON.stringify(s),
+                contentType: "application/json",
+                type: "POST",
+                success: function (r) {
+                    load()
+                    $('#id').val("");
+                    $('#desc').val("");
+                },
+                error: function (e) {
+                    $('#dg_body').html(e.responseText);
+                    $("#dg").modal({ backdrop: true });
+                }
+            })
+        }
+
+    });
+    var dg = $('#dg').datagrid();
+    var load = function () {
+        $.ajax({
+            url: "@Url.Action("getAll", "Servico")",
+            type: "GET",
+            success: function (r) {
+                dg.datagrid({
+                    data: r
+                });
+            },
+            error: function (e) {
+                $('#dg_body').html(e.responseText);
+                $("#dg").modal({ backdrop: true });
+            }
+        });
+    }
+    load()
+    $('#editar').on('click', function () {
+        var u = dg.datagrid('getSelected');
+        $('#id').val(u.id);
+        $('#desc').val(u.descricao);
+    })
+    $('#remover').on('click', function () {
+        $.ajax({
+            url: "@Url.Action("deleteServico", "Servico")",
+            data: { id: parseInt(dg.datagrid('getSelected').id) },
+        type: "POST",
+        success: function () {
+            load();
+        },
+        error: function (e) {
+            $('#dg_body').html(e.responseText);
+            $("#dg").modal({ backdrop: true });
+        }
+        });
+    });
+
+</script>

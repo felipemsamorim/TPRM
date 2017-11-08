@@ -1,0 +1,193 @@
+﻿
+<body>
+    <div>
+        <div class="row" style="padding-bottom:1%">
+            <div class="col-md-6">
+                <input type="hidden" id="id" />
+                <label for="login">Login:</label>
+                <input type="text" name="login" id="login" style="width:90%;max-width:100%">
+            </div>
+            <div class="col-md-6">
+                <label for="senha">Senha:</label>
+                <input type="password" name="senha" id="senha" style="width:90%;max-width:100%">
+            </div>
+        </div>
+
+        <div id="r2" class="row" style="padding-bottom:1%">
+            <div class="col-md-6">
+                <label for="perfil">Perfil:</label>
+                <input class="easyui-combobox" id="perfil" name="perfil" style="width:90%;max-width:100%"
+                       data-options="valueField: 'id',
+                     url: '@Url.Action("getPerfilAll","Usuario")',
+                     textField: 'descricao'">
+            </div>
+            <div class="col-md-6">
+                <label for="emp">Empresa:</label>
+                <input class="easyui-combobox" id="emp" name="emp" style="width:87%;max-width:100%"
+                       data-options="valueField: 'id',
+                     url: '@Url.Action("getAll","Empresa")',
+                     textField: 'nomefantasia'">
+            </div>
+        </div>
+
+        <div class="row" style="padding-bottom:5%">
+            <div class="col-md-12">
+                <button type="button" id="save" iconCls="icon-ok" class="easyui-linkbutton" style="position:relative;right:-41%;width:15%;height:40px">Salvar</button>
+            </div>
+        </div>
+
+    </div>
+    <table id="dg" class="easyui-datagrid" title="Usuários" style="width:100%;height:400px"
+           data-options="fitColumns:true,rownumbers:true,singleSelect:true,toolbar:'#tb',pagination:true">
+        <thead>
+            <tr>
+                <th data-options="field:'id'">ID</th>
+                <th data-options="field:'login'">Usuário</th>
+                <th data-options="field:'prefil_desc'">Perfil</th>
+                <th data-options="field:'empresa_nome'">Empresa</th>
+
+            </tr>
+        </thead>
+    </table>
+    <div id="tb" style="padding:2px 5px;">
+
+        <a id="editar" class="easyui-linkbutton" iconCls="icon-edit">Editar</a>
+        <a id="remover" class="easyui-linkbutton" iconCls="icon-cancel">Remover</a>
+    </div>
+    <!-- Modal -->
+    <div class="modal fade" id="dg" role="dialog">
+        <div class="modal-dialog">
+
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Erro</h4>
+                </div>
+                <div class="modal-body" id="dg_body">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Ok</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modal -->
+</body>
+<script>
+
+    $('input').on('keypress', function (e) {
+        if (e.key == 'Enter')
+            $('#save').trigger('click');
+    });
+    $('#save').on('click', function (e) {
+        $('input').removeClass('error');
+        $('label[id*="error"]').remove();
+
+        if ($('#login').val() == "") {
+            var $label = $('<label  for="login" class="error" style="position: relative;left: -38%;" id="login-error">');
+            $label.insertAfter($('#login'));
+            $label.text('Campo obrigatório');
+        }
+
+        if ($('#senha').val() == "") {
+            var $label = $('<label  for="senha" class="error" style="position: relative;left: -38%;" id="senha-error">');
+            $label.insertAfter($('#senha'));
+            $label.text('Campo obrigatório');
+        }
+
+        if ($('#login').val() == "" ||
+            $('#senha').val() == "")
+            return;
+
+        var u = {
+            id: $('#id').val() == '' ? 0 : $('#id').val(),
+            login: $('#login').val(),
+            senha: $('#senha').val(),
+            empresa: { id: $('#emp').val() },
+            perfil: { id: $('#perfil').val() },
+        }
+
+        if (u.id == 0) {
+            $.ajax({
+                url: "@Url.Action("createUser","Usuario")",
+                data: JSON.stringify(u),
+                contentType: "application/json",
+                type: "POST",
+                success: function (r) {
+                    load()
+                    $('#id').val("");
+                    $('#login').val("");
+                    $('#senha').val("");
+                    $('#perfil').combobox('setValue', '')
+                    $('#emp').combobox('setValue', '')
+                },
+                error: function (e) {
+                    $('#dg_body').html(e.responseText);
+                    $("#dg").modal({ backdrop: true });
+                }
+            })
+        } else {
+            $.ajax({
+                url: "@Url.Action("updateUsuario","Usuario")",
+                data: JSON.stringify(u),
+                contentType: "application/json",
+                type: "POST",
+                success: function (r) {
+                    load()
+                    $('#id').val("");
+                    $('#login').val("");
+                    $('#senha').val("");
+                    $('#perfil').combobox('setValue', '')
+                    $('#emp').combobox('setValue', '')
+                },
+                error: function (e) {
+                    $('#dg_body').html(e.responseText);
+                    $("#dg").modal({ backdrop: true });
+                }
+            })
+        }
+
+    });
+    var dg = $('#dg').datagrid();
+    var load = function () {
+        $.ajax({
+            url: "@Url.Action("getUsuarios", "Usuario")",
+            type: "GET",
+            success: function (r) {
+                dg.datagrid({
+                    data: r
+                });
+            },
+            error: function (e) {
+                $('#dg_body').html(e.responseText);
+                $("#dg").modal({ backdrop: true });
+            }
+        });
+    }
+    load()
+    $('#editar').on('click', function () {
+        var u = dg.datagrid('getSelected');
+        $('#id').val(u.id);
+        $('#login').val(u.login);
+        $('#senha').val(u.senha);
+        $('#perfil').combobox('setValue', u.perfil == null ? '' : u.perfil.id)
+        $('#emp').combobox('setValue', u.empresa == null ? '' : u.empresa.id)
+    })
+    $('#remover').on('click', function () {
+        $.ajax({
+            url: "@Url.Action("deleteUsuario", "Usuario")",
+            data: { id: parseInt(dg.datagrid('getSelected').id) },
+            type: "POST",
+            success: function () {
+                load();
+            },
+            error: function (e) {
+                $('#dg_body').html(e.responseText);
+                $("#dg").modal({ backdrop: true });
+            }
+        });
+    });
+</script>
